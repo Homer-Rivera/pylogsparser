@@ -50,7 +50,7 @@ SAFE_SYMBOLS = ["list", "dict", "tuple", "set", "long", "float", "object",
                 "divmod", "id", "pow", "round", "slice", "vars",
                 "hash", "hex", "int", "isinstance", "issubclass", "len",
                 "map", "filter", "max", "min", "oct", "chr", "ord", "range",
-                "reduce", "repr", "str", "unicode", "basestring", "type", "zip",
+                "reduce", "repr", "str", "unicode", "str", "type", "zip",
                 "xrange", "None", "Exception", "re", "datetime", "math",
                 "urlparse", "country_code_by_address", "extras", "timedelta"]
 
@@ -113,7 +113,7 @@ def get_generic_tagTypes(path = 'normalizers/common_tagTypes.xml'):
         tagTypes = parse(open(path, 'r')).getroot()
         for tagType in tagTypes:
             tt_name = tagType.get('name')
-            tt_type = tagType.get('ttype') or 'basestring'
+            tt_type = tagType.get('ttype') or 'str'
             tt_desc = {}
             for child in tagType:
                 if child.tag == 'description':
@@ -303,8 +303,8 @@ class CSVPattern(object):
         return data
 
     def normalize(self, logline):
-        # Verify logline is a basestring
-        if not isinstance(logline, basestring):
+        # Verify logline is a str
+        if not isinstance(logline, str):
             return None
         # Try to retreive some fields with csv reader
         try:
@@ -454,7 +454,7 @@ class Normalizer(object):
                         elif child.tag == 'regexp':
                             tT_regexp = child.text
                     self.tagTypes[tagType.get('name')] = TagType(tagType.get('name'),
-                                                                 tagType.get('ttype') or "basestring",
+                                                                 tagType.get('ttype') or "str",
                                                                  tT_regexp,
                                                                  tT_description,
                                                                  self.re_flags)
@@ -569,7 +569,7 @@ class Normalizer(object):
             # This is silly, as the pattern order is crucial. So we must enforce that
             # patterns are named in alphabetical order of precedence ...
             patterns = sorted(self.patterns.keys())
-        if isinstance(patterns, basestring):
+        if isinstance(patterns, str):
             patterns = [patterns]
         for pattern in patterns:
             if isinstance(self.patterns[pattern], CSVPattern):
@@ -599,7 +599,7 @@ class Normalizer(object):
         @param do_not_check_prereq: if set to True, the prerequisite tags check
         is skipped (debug purpose only)
         @return: a dictionary with updated tags if normalization was successful."""
-        if isinstance(log, basestring) or not hasattr(log, "get"):
+        if isinstance(log, str) or not hasattr(log, "get"):
             raise ValueError("the normalizer expects an argument of type Dict")
         # Test prerequisites
         if all( [ re.match(value, log.get(prereq, ''))
@@ -731,7 +731,7 @@ def doc2RST(description, gettext = None):
     """
 
     def escape(text):
-        if isinstance(text, basestring):
+        if isinstance(text, str):
             for c in "*\\":
                 text.replace(c, "\\" + c)
         return text
