@@ -34,13 +34,13 @@ import math
 
 from lxml.etree import parse, tostring
 from datetime import datetime, timedelta # pyflakes:ignore
-import urlparse # pyflakes:ignore
-import logsparser.extras as extras # pyflakes:ignore
+import urllib3 # pyflakes:ignore
+#import logsparser.extras as extras # pyflakes:ignore
 
 try:
     import GeoIP #pyflakes:ignore
     country_code_by_address = GeoIP.new(GeoIP.GEOIP_MEMORY_CACHE).country_code_by_addr
-except ImportError, e:
+except ImportError as e:
     country_code_by_address =lambda x: None
 
 # the following symbols and modules are allowed for use in callbacks.
@@ -100,13 +100,13 @@ class TagType(object):
         try:
             self.compiled_regexp = re.compile(regexp, flags)
         except:
-            raise ValueError, "Invalid regular expression %s" % regexp
-            
+            raise ValueError("Invalid regular expression %s" % regexp)
+
 
 # import the common tag types
 def get_generic_tagTypes(path = 'normalizers/common_tagTypes.xml'):
     """Imports the common tag types.
-    
+
     @return: a dictionary of tag types."""
     generic = {}
     try:
@@ -124,8 +124,8 @@ def get_generic_tagTypes(path = 'normalizers/common_tagTypes.xml'):
                     tt_regexp = child.text
             generic[tt_name] = TagType(tt_name, tt_type, tt_regexp, tt_desc)
         return generic
-    except StandardError, err:
-        warnings.warn("Could not load generic tags definition file : %s \
+    except Exception as err:
+        raise Exception("Could not load generic tags definition file : %s \
                        - generic tags will not be available." % err)
         return {}
 
@@ -150,9 +150,9 @@ def get_generic_callBacks(path = 'normalizers/common_callBacks.xml'):
                 #         cb_desc[lang] = desc.text
             generic[cb_name] = CallbackFunction(cb_code, cb_name)
         return generic
-    except StandardError, err:
-        warnings.warn("Could not load generic callbacks definition file : %s \
-                       - generic callbacks will not be available." % err)
+    except Exception as err:
+        raise Exception("Could not load generic callbacks definition file : %s \
+                        - generic callbacks will not be available." % err)
         return {}
 
 class PatternExample(object):
@@ -166,7 +166,7 @@ class PatternExample(object):
         self.raw_line = raw_line
         self.expected_tags = expected_tags
         self.description = description
-        
+
     def get_description(self, language = 'en'):
         """@return : An example description"""
         return { 'sample' : self.raw_line,
@@ -187,18 +187,18 @@ class Pattern(object):
         self.description = description
         self.examples = examples
         self.commonTags = commonTags
-        
+
     def normalize(self, logline):
         raise NotImplementedError
-        
+
     def test_examples(self):
         raise NotImplementedError
-        
+
     def get_description(self, language = 'en'):
         tags_desc = dict([ (tag.name, tag.get_description(language)) for tag in self.tags.values() ])
         substitutes = dict([ (tag.substitute, tag.name) for tag in self.tags.values() ])
         examples_desc = [ example.get_description(language) for example in self.examples ]
-        return { 'pattern' : self.pattern, 
+        return { 'pattern' : self.pattern,
                  'description' : self.description.get(language, "N/A"),
                  'tags' : tags_desc,
                  'substitutes' : substitutes,
@@ -220,7 +220,7 @@ class CSVPattern(object):
                  description = '',
                  commonTags = {},
                  examples = []):
-        """ 
+        """
         @param name: the pattern name
         @param pattern: the CSV pattern
         @param separator: the CSV delimiter
@@ -288,7 +288,7 @@ class CSVPattern(object):
                         continue
                     try:
                         callback(data[tag], data)
-                    except Exception, e:
+                    except Exception as e:
                         raise Exception("Error on callback %s in pattern %s : %s - skipping" %
                                        (cbname,
                                         self.name, e))
@@ -324,15 +324,15 @@ class CSVPattern(object):
             if data:
                 data.update(self.commonTags)
         return data
-        
+
     def test_examples(self):
         raise NotImplementedError
-        
+
     def get_description(self, language = 'en'):
         tags_desc = dict([ (tag.name, tag.get_description(language)) for tag in self.tags.values() ])
         substitutes = dict([ (tag.substitute, tag.name) for tag in self.tags.values() ])
         examples_desc = [ example.get_description(language) for example in self.examples ]
-        return { 'pattern' : self.pattern, 
+        return { 'pattern' : self.pattern,
                  'description' : self.description.get(language, "N/A"),
                  'tags' : tags_desc,
                  'substitutes' : substitutes,
@@ -348,14 +348,14 @@ class CallbackFunction(object):
     """
     def __init__(self, function_body = "log['test'] = value",
                  name = 'unknown'):
-        
+
         source = "def __cbfunc__(value,log):\n"
         source += '\t' + '\n\t'.join(function_body.split('\n')) + '\n'
-        
+
         self.__doc__ = "Callback function generated from the following code:\n\n" + source
         byteCode = compile(source, '<string>', 'exec')
         self.name = name
-        
+
         # Setup a standard-compatible python environment
         builtins   = dict()
         globs      = dict()
@@ -365,12 +365,12 @@ class CallbackFunction(object):
         globs["__builtins__"] = builtins
         globs["__name__"] = "SAFE_ENV"
         globs["__doc__"] = source
-        
+
         if type(__builtins__) is dict:
             bi_dict = __builtins__
         else:
             bi_dict = __builtins__.__dict__
-        
+
         for k in SAFE_SYMBOLS:
             try:
                 locs[k] = locals()[k]
@@ -386,11 +386,11 @@ class CallbackFunction(object):
                 builtins[k] = bi_dict[k]
             except KeyError:
                 pass
-        
+
         # set the function in the safe environment
         eval(byteCode, globs, locs)
         self.cbfunction = locs["__cbfunc__"]
-    
+
     def __call__(self, value, log):
         """call the instance as a function to run the callback."""
         # Exceptions are caught higher up in the normalization process.
@@ -400,7 +400,7 @@ class CallbackFunction(object):
 
 class Normalizer(object):
     """Log Normalizer, based on an XML definition file."""
-    
+
     def __init__(self, xmlconf, genericTagTypes, genericCallBacks):
         """initializes the normalizer with an lxml ElementTree.
 
@@ -423,7 +423,7 @@ class Normalizer(object):
         self.name = normalizer.get('name')
         self.expandWhitespaces = False
         if not self.name:
-            raise ValueError, "The normalizer configuration lacks a name."
+            raise ValueError("The normalizer configuration lacks a name.")
         self.version = float(normalizer.get('version')) or 1.0
         self.appliedTo = normalizer.get('appliedTo') or 'raw'
         self.re_flags = ( (normalizer.get('unicode') == "yes" and re.UNICODE ) or 0 ) |\
@@ -472,10 +472,10 @@ class Normalizer(object):
             elif node.tag == "finalCallbacks":
                 for callback in node:
                     self.finalCallbacks.append(callback.text)
-        # precompile regexp 
+        # precompile regexp
         self.full_regexp, self.tags_translation, self.tags_to_pattern, whatever = self.get_uncompiled_regexp()
         self.full_regexp = re.compile(self.full_regexp, self.re_flags)
-    
+
     def __parse_patterns(self, node):
         for pattern in node:
             p_name = pattern.get('name')
@@ -513,7 +513,7 @@ class Normalizer(object):
                             elif child.tag == 'callbacks':
                                 for cb in child:
                                     t_cb.append(cb.text)
-                        p_tags[t_name] = Tag(t_name, t_tagtype, t_substitute, t_description, t_cb) 
+                        p_tags[t_name] = Tag(t_name, t_tagtype, t_substitute, t_description, t_cb)
                 elif p_node.tag == "commonTags":
                     for commontag in p_node:
                         p_commonTags[commontag.get('name')] = commontag.text
@@ -540,7 +540,7 @@ class Normalizer(object):
 
     def get_description(self, language = "en"):
         return "%s v. %s" % (self.name, self.version)
-    
+
     def get_long_description(self, language = 'en'):
         patterns_desc = [ pattern.get_description(language) for pattern in self.patterns.values() ]
         return { 'name' : self.name,
@@ -581,8 +581,8 @@ class Normalizer(object):
                 # tagTypes defined in the conf file take precedence on the
                 # generic ones. If nothing found either way, fall back to
                 # Anything.
-                
-                tag_regexp = self.tagTypes.get(tag.tagtype, 
+
+                tag_regexp = self.tagTypes.get(tag.tagtype,
                                                self.genericTagTypes.get(tag.tagtype,
                                                                         self.genericTagTypes['Anything'])).regexp
                 named_group = '(?P<tag%i>%s)' % (increment, tag_regexp)
@@ -600,7 +600,7 @@ class Normalizer(object):
         is skipped (debug purpose only)
         @return: a dictionary with updated tags if normalization was successful."""
         if isinstance(log, basestring) or not hasattr(log, "get"):
-            raise ValueError, "the normalizer expects an argument of type Dict"
+            raise ValueError("the normalizer expects an argument of type Dict")
         # Test prerequisites
         if all( [ re.match(value, log.get(prereq, ''))
                   for prereq, value in self.prerequisites.items() ]) or\
@@ -626,7 +626,7 @@ class Normalizer(object):
                                     # if the callback doesn't exist in the normalizer file, it will
                                     # search in the commonCallBack file.
                                     temp_wl = self.callbacks.get(cb, self.genericCallBacks.get(cb))(m[tag], temp_wl)
-                                except Exception, e:
+                                except Exception as e:
                                     pattern_name = self.patterns[self.tags_to_pattern[tag]].name
                                     raise Exception("Error on callback %s in pattern %s : %s - skipping" %
                                                     (self.callbacks[cb].name,
@@ -636,7 +636,7 @@ class Normalizer(object):
                                 del temp_wl[self.tags_translation[tag]]
                     log.update(temp_wl)
                     # add the pattern's common Tags
-                    log.update(matched_pattern.commonTags) 
+                    log.update(matched_pattern.commonTags)
                     # then add the normalizer's common Tags
                     log.update(self.commonTags)
                     # then add the taxonomy if relevant
@@ -646,7 +646,7 @@ class Normalizer(object):
                     for cb in self.finalCallbacks:
                         try:
                             log.update(self.callbacks.get(cb, self.genericCallBacks.get(cb))(None, log))
-                        except Exception, e:
+                        except Exception as e:
                             raise Exception("Cannot apply final callback %s : %r - skipping" % (cb, e))
                 elif csv_patterns:
                     # this little trick makes the following line not type dependent
@@ -665,7 +665,7 @@ class Normalizer(object):
                             for cb in self.finalCallbacks:
                                 try:
                                     log.update(self.callbacks.get(cb, self.genericCallBacks.get(cb))(None, log))
-                                except Exception, e:
+                                except Exception as e:
                                     raise Exception("Cannot apply final callback %s : %r - skipping" % (cb, e))
                             break
         return log
@@ -692,7 +692,7 @@ class Normalizer(object):
                         for cb in self.finalCallbacks:
                             try:
                                 w.update(self.callbacks.get(cb, self.genericCallBacks.get(cb))(None, w))
-                            except Exception, e:
+                            except Exception as e:
                                 raise Exception("Cannot apply final callback %s : %r - skipping" % (cb, e))
                 for expectedTag in example.expected_tags.keys():
                     if isinstance(w.get(expectedTag), datetime):
@@ -702,23 +702,23 @@ class Normalizer(object):
                     else:
                         svalue = w.get(expectedTag)
                     if svalue != example.expected_tags[expectedTag]:
-                        raise ValueError, 'Sample log "%s" does not match : expected %s -> %s, %s' % \
+                        raise ValueError('Sample log "%s" does not match : expected %s -> %s, %s' % \
                                             (example,
                                              expectedTag,
                                              example.expected_tags[expectedTag],
-                                             w.get(expectedTag))
+                                             w.get(expectedTag)))
         # No problem so far ? Awesome !
         return True
 
     def get_source(self):
         """gets the raw XML source for this normalizer."""
         return self.text_source
-        
+
     def get_languages(self):
         """guesstimates the available languages from the description field and
         returns them as a list."""
         return self.description.keys()
-        
+
 # Documentation generator
 def doc2RST(description, gettext = None):
     """ Returns a RestructuredText documentation from
@@ -729,7 +729,7 @@ def doc2RST(description, gettext = None):
                         select a language.
                         eg. gettext.translation('normalizer', 'i18n', ['fr_FR']).ugettext
     """
-    
+
     def escape(text):
         if isinstance(text, basestring):
             for c in "*\\":
@@ -796,4 +796,3 @@ Examples
                 d['examples'] += "  * **%s** -> %s\n" % (escape(tag), value)
             d['examples'] += '\n'
     return template % d
-
