@@ -73,9 +73,9 @@ if m:
     vals = dict( [ (u, int(vals[u])) for u in vals.keys() ])
     newdate = datetime(**vals)
 
-    log['date'] = newdate  
+    log['date'] = newdate
 else:
-    raise Exception, "invalid date string %s" % value
+    raise Exception("invalid date string %s" % value)
 		</code>
 	</callback>
 	<callback name="MMM dd hh:mm:ss">
@@ -87,8 +87,8 @@ else:
 			</localized_desc>
 		</description>
 		<code>
-MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
-          'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']   
+MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+          'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 now = datetime.now()
 currentyear = now.year
 # Following line may throw a lot of ValueError
@@ -121,8 +121,8 @@ log['date'] = newdate
 			</localized_desc>
 		</description>
 		<code>
-MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
-          'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']   
+MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+          'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 # Following line may throw a lot of ValueError
 newdate = datetime(int(value[7:11]),
                    MONTHS.index(value[0:3]) + 1,
@@ -146,17 +146,17 @@ log['date'] = newdate
 		<code>
 reg = re.compile(u'(?P&lt;month&gt;[A-Z]{1}[a-z]{2}) (?P&lt;day&gt;\d{1,2}) (?P&lt;hours&gt;\d{2}):(?P&lt;minutes&gt;\d{2}):(?P&lt;seconds&gt;\d{2}) (?P&lt;year&gt;\d{4})')
 
-month = {'Jan' : 1, 
-     'Feb' : 2, 
-     'Mar' : 3, 
-     'Apr' : 4, 
-     'May' : 5, 
-     'Jun' : 6, 
-     'Jul' : 7, 
-     'Aug' : 8, 
-     'Sep' : 9, 
-     'Oct' : 10, 
-     'Nov' : 11, 
+month = {'Jan' : 1,
+     'Feb' : 2,
+     'Mar' : 3,
+     'Apr' : 4,
+     'May' : 5,
+     'Jun' : 6,
+     'Jul' : 7,
+     'Aug' : 8,
+     'Sep' : 9,
+     'Oct' : 10,
+     'Nov' : 11,
      'Dec' : 12}
 
 date = reg.search(value).groupdict()
@@ -258,7 +258,7 @@ log["date"] = newdate
 	<callback name="ISO8601">
 	    <description>
 	        <localized_desc language="en">
-Converts a combined date and time in UTC expressed according to the ISO 8601 
+Converts a combined date and time in UTC expressed according to the ISO 8601
 standard. Also commonly referred to as "Zulu Time".
 Precision can be up to the millisecond.
             </localized_desc>
