@@ -628,7 +628,7 @@ class Normalizer(object):
                                     temp_wl = self.callbacks.get(cb, self.genericCallBacks.get(cb))(m[tag], temp_wl)
                                 except Exception as e:
                                     pattern_name = self.patterns[self.tags_to_pattern[tag]].name
-                                    raise Exception("Error on callback %s in pattern %s : %s - skipping" %
+                                    Exception("Error on callback %s in pattern %s : %s - skipping" %
                                                     (self.callbacks[cb].name,
                                                      pattern_name, e))
                             # remove temporary tags
