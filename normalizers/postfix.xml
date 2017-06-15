@@ -94,6 +94,9 @@ for couple in couples:
                 if bounce_message:
                     log['error_message'] = bounce_message.group(1)
             if log[tagname] == 'deferred':
+                deferred_relay = re.search(".*connect to ([A-Za-z0-9\-\.]+\[.*\]\:\d+)\:",tagvalue)
+                if deferred_relay:
+                    log['relay'] = deferred_relay.group(1)
                 deferred_message = re.search("deferred \((.*)\)?$",tagvalue)
                 if deferred_message:
                     log['error_message'] = deferred_message.group(1)
