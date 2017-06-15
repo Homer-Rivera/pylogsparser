@@ -97,7 +97,7 @@ for couple in couples:
                 deferred_message = re.search("deferred \((.*)\)?$",tagvalue)
                 if deferred_message:
                     log['deferred_message'] = deferred_message.group(1)
-log['zzz'] = "ggg"
+
 TRANSLATE = {"to": "message_recipient",
              "from": "message_sender",
              "size": "len",
