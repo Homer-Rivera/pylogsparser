@@ -57,6 +57,13 @@ Les clés extraites par ce normaliseur sont "client", "to", "from", "orig_to", "
 if log.get("program", "").startswith("postfix"):
     log["component"] = log['program'][8:]
     log["program"] = "postfix"
+
+# Grabb bounce notification id for notified email
+if log["component"] == 'bounce':
+    non_delivery_id = re.search(".*notification: ([a-zA-Z0-9]+)",log["body"])
+    if non_delivery_id:
+        log["non_delivery_id"] = non_delivery_id.group(1)
+
 ACCEPTED = [ "client",
              "to",
              "from",
@@ -65,24 +72,41 @@ ACCEPTED = [ "client",
              "size",
              "message-id",
              "status" ]
+
 # re to trying to match client and relay address
 r=re.compile('(?P&lt;host&gt;[A-Za-z0-9\-\.]+)(?P&lt;ip&gt;\[.*\])?(?P&lt;port&gt;\:\d+)?$')
 
 couples = value.split(', ')
 for couple in couples:
-    tagname, tagvalue = couple.split('=', 1)
+    if "=" in couple:
+        tagname, tagvalue = couple.split('=', 1)
     if tagname in ACCEPTED:
         tagvalue = tagvalue.strip('&lt;&gt;')
         log[tagname] = tagvalue
         if tagname == 'status':
             log[tagname] = log[tagname].split()[0]
-
+            if log[tagname] == 'sent':
+                remote_queue_id = re.search("sent.*(queued as |d=)([a-zA-Z0-9\-\/_]+)(\))?",tagvalue)
+                if remote_queue_id:
+                    log['remote_queue_id'] = remote_queue_id.group(2)
+            if log[tagname] == 'bounced':
+                bounce_message = re.search("bounced \((.*)\(.*\)\)$",tagvalue)
+                if bounce_message:
+                    log['bounce_message'] = bounce_message.group(1)
+            if log[tagname] == 'deferred':
+                deferred_message = re.search("deferred \((.*)\)?$",tagvalue)
+                if deferred_message:
+                    log['deferred_message'] = deferred_message.group(1)
+log['zzz'] = "ggg"
 TRANSLATE = {"to": "message_recipient",
              "from": "message_sender",
              "size": "len",
              "message-id": "message_id"}
+
 for k,v in TRANSLATE.items():
+    log[k] = "test"
     if k in log.keys():
+        
         val = log[k]
         del log[k]
         log[v] = val
@@ -104,7 +128,6 @@ if 'relay' in log.keys():
         log['dest_ip'] = ip.strip("[]")
     if port:
         log['dest_port'] = port.strip(':')
-
     </callback>
     </callbacks>
     <prerequisites>
@@ -149,4 +172,3 @@ if 'relay' in log.keys():
         </pattern>
     </patterns>
 </normalizer>
-
